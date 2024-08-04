@@ -1,3 +1,5 @@
+#define INTERNAL_CPU_ACCESS
+
 #include "instructions.h"
 #include "cpu.h"
 
@@ -197,3 +199,15 @@ static void fetch(void){
 }
 
 
+void execute_instruction(uint8_t op, uint32_t *cycles){
+    uint8_t additional_cycle1, additional_cycle2;
+    
+    state.opcode = op;
+    
+    *cycles = lookup[op].cycles;
+
+    additional_cycle1 = (*(lookup[op].mode))();
+    additional_cycle2 = (*(lookup[op].operation))();
+
+    *cycles += additional_cycle1 & additional_cycle2;
+}

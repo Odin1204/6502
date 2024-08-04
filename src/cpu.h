@@ -5,6 +5,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+
+#ifdef CPU_INTERNAL_ACCESS
 struct Cpu
 {
     /* Registers */
@@ -35,8 +37,14 @@ struct Cpu
 #define O 6
 #define N 7
 
+extern struct Cpu cpu;
 
+uint8_t set_status_flag(uint8_t flag, uint8_t val);
+uint8_t extract_flag(uint8_t flag);
 
-void set_status_flag(uint8_t flag, uint8_t val);
+uint8_t cpu_read(uint16_t address);
+void cpu_write(uint32_t address, uint8_t data);
+
+#endif //for files that need access to the internal cpu structure
 
 #endif
