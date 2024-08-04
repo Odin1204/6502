@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-struct CPU
+struct Cpu
 {
     /* Registers */
     uint16_t programm_counter;
@@ -26,6 +26,7 @@ struct CPU
         Negative Flag: bit 7*/
 };
 
+//Flags
 #define C 0
 #define Z 1 
 #define I 2
@@ -35,14 +36,6 @@ struct CPU
 #define N 7
 
 
-struct memory
-{
-    /* pages */
-    uint8_t zero_page[0x100];
-    uint8_t stack[0x100];
-    uint8_t last_six[0x06];
-    uint8_t data[0xFFFF-0x206];
-};
 
 void set_status_flag(uint8_t flag, uint8_t val);
 

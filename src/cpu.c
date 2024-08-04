@@ -5,10 +5,19 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-struct CPU cpu;
+struct Cpu cpu;
 
 uint8_t cycles; //Counts how many cycles the current instruction has remaining
 uint32_t clock_count; //Current clock cycle
+
+//functions to set flags and extract it
+void set_bit(uint8_t num, uint8_t bit){
+    num = num | 1 << bit;
+}
+
+void reset_bit(uint8_t num, uint8_t bit){
+    num = num & ~(1 << bit);
+}
 
 int set_status_flag(uint8_t flag, uint8_t val){
     if (val != 1 && val != 0)
@@ -25,13 +34,11 @@ int set_status_flag(uint8_t flag, uint8_t val){
         return 1;       
 }
 
-void set_bit(uint8_t num, uint8_t bit){
-    num = num | 1 << bit;
+uint8_t extract_flag(uint8_t flag){
+    return ((cpu.status >> flag) & 1);
 }
 
-void reset_bit(uint8_t num, uint8_t bit){
-    num = num & ~(1 << bit);
-}
+
 
 //resets all registers and emulator variables to a predetermint state
 void cpu_reset(){

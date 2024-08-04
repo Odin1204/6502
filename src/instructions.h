@@ -16,7 +16,7 @@ struct instruction
 
 struct emulator_state
 {
-    uint8_t fetched; //Recently fecthed data for current operation
+    uint8_t fetched; //Recently fetched data for current operation
     uint16_t addr_abs; //Absolute Address for current instruction
     uint8_t addr_rel; //Relative address for branching
     uint8_t opcode; //Current opcode being executed

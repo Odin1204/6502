@@ -170,6 +170,7 @@ struct instruction lookup[256] = {
     {"???", &XXX, &IMP, 7},
 };
 
+//initialise the emulator state variables
 struct emulator_state state;
 
 
