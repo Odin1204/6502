@@ -27,6 +27,6 @@ struct emulator_state
 
 void reset_emulator_state();
 
-void execute_instruction(uint8_t op, uint32_t *cycles);
+void execute_instruction(uint8_t op, uint8_t *cycles);
 
 #endif

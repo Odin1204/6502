@@ -50,7 +50,7 @@ uint8_t extract_flag(uint8_t flag){
 //resets all registers and emulator variables to a predetermint state
 void cpu_reset(){
 
-    cpu.programm_counter = 0x8000;
+    cpu.program_counter = 0x8000;
     
     cpu.accumulator = 0x0;
     cpu.x = 0x0;
@@ -84,7 +84,7 @@ void clock(){
 
     if (cycles == 0){
 
-        opcode = cpu_read(cpu.programm_counter++);
+        opcode = cpu_read(cpu.program_counter++);
 
         execute_instruction(opcode, &cycles);
     }

@@ -192,14 +192,22 @@ static void set_flag(uint8_t flag, uint8_t val){
         set_status_flag(flag, 0);
 }
 
+//gets a specific bit in the flag register
+static uint8_t get_flag(uint8_t flag){
+    return extract_flag(flag);
+}
+
 //fetches address mode and stores it in the state.fetch variable
 static void fetch(void){
     if (lookup[state.opcode].mode != &IMP)
-        state.fetched = lookup[state.opcode].mode;
+        state.fetched = cpu_read(state.addr_abs);
+    
+    return state.fetched;
 }
 
-
-void execute_instruction(uint8_t op, uint32_t *cycles){
+/*stores the opcode in the state.opcode variable, sets the cycles variable of the cpu.c file to the 
+  corresponding cycles, executes the addressing mode and operation. If needed it also adds an additional cycle*/ 
+void execute_instruction(uint8_t op, uint8_t *cycles){
     uint8_t additional_cycle1, additional_cycle2;
     
     state.opcode = op;
@@ -210,4 +218,149 @@ void execute_instruction(uint8_t op, uint32_t *cycles){
     additional_cycle2 = (*(lookup[op].operation))();
 
     *cycles += additional_cycle1 & additional_cycle2;
+}
+
+
+//Addressing modes
+
+
+//Implicit: For instruction where the datat is implied by the function of the instruction or is the accumulator
+uint8_t IMP(void){
+    state.fetched = cpu.accumulator;  
+    
+    return 0;
+}
+
+//Immediate: The data is specified by the next byte in the program
+uint8_t IMM(void){
+    state.addr_abs = cpu.program_counter++;
+
+    return 0;
+}
+
+//Zero Page: Uses only the Data from the first page in memory specified by an 8-bit operand. 
+uint8_t ZP0(void){
+    state.addr_abs = (cpu_read(cpu.program_counter++) & 0x00FF);
+
+    return 0;
+}
+
+/*Zero Page with X offset: Offsets the specified 8-bit operand by the content of the X register.
+  If the zero page is crossed it wraps around. So if the operand is 0xFF and X is 0x02 the address will be 0x01.*/
+uint8_t ZPX(void){
+    state.addr_abs = ((cpu_read(cpu.program_counter++) + cpu.x) & 0x00FF);
+
+    return 0;
+}
+
+//Zero Page with Y offset: Same as ZPX but with the Y register.
+uint8_t ZPY(void){
+    state.addr_abs = ((cpu_read(cpu.program_counter++) + cpu.y) & 0x00FF);
+
+    return 0;
+}
+
+/*Relative: Only for Branch instructions. 
+  It can only jump within the range of -127 to 128 relative to the program counter.
+  If the 7th bit is 0, so the number is signed, the high byte is set to 0xFF so arithmatic will work.*/
+uint8_t REL(void){
+    state.addr_rel = (cpu_read(cpu.program_counter));
+    if (state.addr_rel | 0x80)
+        state.addr_rel |= 0xFF00;
+
+    return 0;
+}
+
+//Absolute: Operand specifies an absolute 16-bit address
+uint8_t ABS(void){
+    uint16_t low = cpu_read(cpu.program_counter++);
+    uint16_t high = (cpu_read(cpu.program_counter++) << 8);
+
+    state.addr_abs = high | low;
+
+    return 0;
+}
+
+/*Absolute with X offset: Offsets the absolute address by the contents of the X register.
+  If a page is crossed it may need an additional clock cycle.*/
+uint8_t ABX(void){
+    uint16_t low = cpu_read(cpu.program_counter++);
+    uint16_t high = (cpu_read(cpu.program_counter++) << 8);
+
+    state.addr_abs = (high | low) + cpu.x;
+
+    if (high != (state.addr_abs & 0xFF00))
+        return 1;
+    else
+        return 0;
+}
+
+//Absolute with Y offset: Same as ABX but with the Y Register
+uint8_t ABY(void){
+    uint16_t low = cpu_read(cpu.program_counter++);
+    uint16_t high = (cpu_read(cpu.program_counter++) << 8);
+
+    state.addr_abs = (high | low) + cpu.y;
+
+    if (high != (state.addr_abs & 0xFF00))
+        return 1;
+    else
+        return 0;
+}
+
+/*Indirect: The Operant is a pointer to the absolute address.
+  There is a bug in the harware, that if a page would be crossed with the increase of the pointer
+  after the low byte has been read, the pointer wraps around on the current page and the high byte
+  is the first elemt of the current page.*/
+uint8_t IND(void){
+    uint16_t low_ptr = cpu_read(cpu.program_counter++);
+    uint16_t high_ptr = (cpu_read(cpu.program_counter++) << 8);
+
+    uint16_t ptr = high_ptr | low_ptr;
+
+    uint16_t low = cpu_read(ptr);
+    
+    uint16_t high;
+
+    //normal
+    if (low_ptr != 0x00FF)
+        high = (cpu_read(++ptr) << 8);
+    else //bug
+        high = (cpu_read(ptr & 0xFF00) << 8);
+
+    state.addr_abs = high | low;
+
+    return 0; 
+}
+
+/*Indirect Zero Page with X offset: Operand is an 8-bit pointer to somewhere in the first page,
+  offsets it by x and retrives the 16-bit address. If the zero page would be crossed, 
+  when adding X or increasing it, it wraps aroud.*/
+uint8_t IZX(void){
+    uint16_t ptr = ((cpu_read(cpu.program_counter++) + cpu.x) & 0x00FF);
+
+    uint16_t low = cpu_read(ptr++);
+    uint16_t high = (cpu_read(ptr & 0x00FF) << 8);
+
+    state.addr_abs = high | low;
+
+    return 0;
+}
+
+/*Indirect Zero Page with Y offset: Operand is an 8-bit pointer to somewhere in the first page,
+  retrives a 16-bit address and offsets the address by Y. When the zero page would be crossed when 
+  the pointer is increased it wraps around. When a page is crossed when adding Y an additional clock cycle 
+  may be required.*/
+uint8_t IZY(void){
+    uint16_t ptr = (cpu_read(cpu.program_counter++) & 0x00FF);
+
+    uint16_t low = cpu_read(ptr++);
+    uint16_t high = (cpu_read(ptr & 0x00FF) << 8);
+
+    state.addr_abs = (high | low) + cpu.y;
+
+    if (high != (state.addr_abs & 0xFF00))
+        return 1;
+    else
+        return 0;
 }

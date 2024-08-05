@@ -10,7 +10,7 @@
 struct Cpu
 {
     /* Registers */
-    uint16_t programm_counter;
+    uint16_t program_counter;
     uint8_t stack_pointer;
     uint8_t accumulator;
     uint8_t x;
@@ -43,7 +43,9 @@ uint8_t set_status_flag(uint8_t flag, uint8_t val);
 uint8_t extract_flag(uint8_t flag);
 
 uint8_t cpu_read(uint16_t address);
-void cpu_write(uint32_t address, uint8_t data);
+void cpu_write(uint16_t address, uint8_t data);
+
+uint8_t extract_flag(uint8_t flag);
 
 #endif //for files that need access to the internal cpu structure
 
