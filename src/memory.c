@@ -7,7 +7,7 @@
 //sets every byte in memory to 0x00
 void reset_memory(struct Memory *mem){
     int i;
-    for (i; i < DATA; i++){
+    for (i=0; i < DATA; i++){
         if (i < 0x06)
             mem->last_six[i] = 0x00;
         if (i < 0x0100){

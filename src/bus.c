@@ -3,7 +3,7 @@
 #include <stdint.h>
 
 //initialise The Bus
-void initBus(struct Bus *bus, struct Cpu *cpu, struct Memory *memory){
+void init_bus(struct Bus *bus, struct Cpu *cpu, struct Memory *memory){
     bus->cpu = cpu;
     bus->memory = memory;
 }

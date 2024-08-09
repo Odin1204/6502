@@ -1,4 +1,5 @@
 #define INTERNAL_CPU_ACCESS
+#define LOGMODE //comment to disable logmode
 
 #include "instructions.h"
 #include "cpu.h"
@@ -177,7 +178,7 @@ struct emulator_state state;
 
 
 // sets all emulator state vars to 0
-static void reset_emulaor_state(){
+void reset_emulator_state(){
     state.addr_abs = 0x0;
     state.addr_rel = 0x0;
     state.opcode = 0x0;
@@ -197,8 +198,8 @@ static uint8_t get_flag(uint8_t flag){
     return extract_flag(flag);
 }
 
-//fetches address mode and stores it in the state.fetch variable
-static void fetch(void){
+//fetches Data from Addressing mode and stores it in the state.fetch variable
+static uint8_t fetch(void){
     if (lookup[state.opcode].mode != &IMP)
         state.fetched = cpu_read(state.addr_abs);
     
@@ -216,6 +217,11 @@ void execute_instruction(uint8_t op, uint8_t *cycles){
 
     additional_cycle1 = (*(lookup[op].mode))();
     additional_cycle2 = (*(lookup[op].operation))();
+
+    #ifdef LOGMODE
+    printf("\nInstruction: %s, Absolute Address: %x\n", lookup[op].name, state.addr_abs);
+
+    #endif
 
     *cycles += additional_cycle1 & additional_cycle2;
 }
@@ -363,4 +369,200 @@ uint8_t IZY(void){
         return 1;
     else
         return 0;
+}
+
+
+//Operations
+
+uint8_t ADC(void){
+    fetch();
+
+    uint16_t temp;
+
+    temp = cpu.accumulator + state.fetched + get_flag(C);
+
+    set_flag(C,temp > 0xFF);
+
+    set_flag(Z, (!(temp & 0xFF)));
+
+    set_flag(N, (temp & 0x80) > 0);
+
+    set_flag(O, ((~(state.fetched ^ cpu.accumulator) & (cpu.accumulator ^ temp)) >> 7) & 1);
+
+    #ifdef LOGMODE
+    printf("\ntemp while ADC: %x\n", temp); 
+    #endif
+
+    cpu.accumulator = temp & 0x00FF;
+
+    return 1;
+}
+
+static uint8_t XXX(void){
+    return 0;
+}
+static uint8_t LDA(void){
+    return 0;
+}
+static uint8_t LDX(void){
+    return 0;
+}
+static uint8_t LDY(void){
+    return 0;
+}
+static uint8_t BRK(void){
+    return 0;
+}
+static uint8_t BPL(void){
+    return 0;
+}
+static uint8_t JSR(void){
+    return 0;
+}
+static uint8_t BMI(void){
+    return 0;
+}
+static uint8_t RTI(void){
+    return 0;
+}
+static uint8_t BVC(void){
+    return 0;
+}
+static uint8_t RTS(void){
+    return 0;
+}
+static uint8_t BVS(void){
+    return 0;
+}
+static uint8_t NOP(void){
+    return 0;
+}
+static uint8_t BCC(void){
+    return 0;
+}
+static uint8_t BCS(void){
+    return 0;
+}
+static uint8_t BNE(void){
+    return 0;
+}
+static uint8_t CPX(void){
+    return 0;
+}
+static uint8_t CPY(void){
+    return 0;
+}
+static uint8_t BEQ(void){
+    return 0;
+}
+static uint8_t ORA(void){
+    return 0;
+}
+static uint8_t AND(void){
+    return 0;
+}
+static uint8_t EOR(void){
+    return 0;
+}
+static uint8_t BIT(void){
+    return 0;
+}
+static uint8_t STA(void){
+    return 0;
+}
+static uint8_t STX(void){
+    return 0;
+}
+static uint8_t STY(void){
+    return 0;
+}
+static uint8_t CMP(void){
+    return 0;
+}
+static uint8_t SBC(void){
+    return 0;
+}
+static uint8_t ASL(void){
+    return 0;
+}
+static uint8_t ROL(void){
+    return 0;
+}
+static uint8_t LSR(void){
+    return 0;
+}
+static uint8_t ROR(void){
+    return 0;
+}
+static uint8_t DEC(void){
+    return 0;
+}
+static uint8_t DEX(void){
+    return 0;
+}
+static uint8_t DEY(void){
+    return 0;
+}
+static uint8_t INC(void){
+    return 0;
+}
+static uint8_t INX(void){
+    return 0;
+}
+static uint8_t INY(void){
+    return 0;
+}
+static uint8_t PHP(void){
+    return 0;
+}
+static uint8_t SEC(void){
+    return 0;
+}
+static uint8_t CLC(void){
+    return 0;
+}
+static uint8_t CLI(void){
+    return 0;
+}
+static uint8_t PLP(void){
+    return 0;
+}
+static uint8_t PLA(void){
+    return 0;
+}
+static uint8_t PHA(void){
+    return 0;
+}
+static uint8_t SEI(void){
+    return 0;
+}
+static uint8_t TYA(void){
+    return 0;
+}
+static uint8_t CLV(void){
+    return 0;
+}
+static uint8_t CLD(void){
+    return 0;
+}
+static uint8_t SED(void){
+    return 0;
+}
+static uint8_t TXA(void){
+    return 0;
+}
+static uint8_t TXS(void){
+    return 0;
+}
+static uint8_t TAX(void){
+    return 0;
+}
+static uint8_t TAY(void){
+    return 0;
+}
+static uint8_t TSX(void){
+    return 0;
+}
+static uint8_t JMP(void){
+    return 0;
 }

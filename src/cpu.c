@@ -1,4 +1,5 @@
 #define CPU_INTERNAL_ACCESS
+#define LOGMODE //comment to disable logmode
 
 #include "instructions.h"
 #include "bus.h"
@@ -18,12 +19,14 @@ uint8_t cycles; //Counts how many cycles the current instruction has remaining
 uint32_t clock_count; //Current clock cycle
 
 //functions to set flags and extract it
-void set_bit(uint8_t num, uint8_t bit){
-    num = num | 1 << bit;
+uint8_t set_bit(uint8_t *num_p, uint8_t bit){
+    *num_p = *num_p | 1 << bit;
+    return *num_p;
 }
 
-void reset_bit(uint8_t num, uint8_t bit){
-    num = num & ~(1 << bit);
+uint8_t reset_bit(uint8_t *num_p, uint8_t bit){
+    *num_p = *num_p & ~(1 << bit);
+    return *num_p;
 }
 
 uint8_t set_status_flag(uint8_t flag, uint8_t val){
@@ -32,9 +35,9 @@ uint8_t set_status_flag(uint8_t flag, uint8_t val){
     
     if (flag >= 0 && flag < 8 && flag != 5) {
         if (val == 1)
-            set_bit(cpu.status, flag);
+            set_bit(&cpu.status, flag);
         else
-            reset_bit(cpu.status, flag);
+            reset_bit(&cpu.status, flag);
         return 0;
     }
     else
@@ -47,7 +50,7 @@ uint8_t extract_flag(uint8_t flag){
 
 
 
-//resets all registers and emulator variables to a predetermint state
+//resets all registers and emulator variables to a predetermint state and re-initialises the bus
 void cpu_reset(){
 
     cpu.program_counter = 0x8000;
@@ -59,11 +62,15 @@ void cpu_reset(){
     cpu.stack_pointer = 0xFD;
 
     reset_emulator_state();
-    reset_memory;
-    init_bus;
+    init_bus(&bus, &cpu, &mem);
 
     clock_count = 0;
     cycles = 8;
+}
+
+void total_reset(){
+    reset_memory(&mem);
+    cpu_reset();
 }
 
 //read from the bus and return the data
@@ -81,12 +88,25 @@ void cpu_write(uint16_t address, uint8_t data){
 void clock(){
     uint8_t opcode;
 
-
     if (cycles == 0){
+        #ifdef LOGMODE
+        printf("\nNew Instruction");
+        #endif
 
         opcode = cpu_read(cpu.program_counter++);
 
+
         execute_instruction(opcode, &cycles);
+
+        #ifdef LOGMODE //if logmode is enabled print   
+
+        printf("\n Opcode: %x, cycles: %d\n", opcode, cycles);
+
+        printf("\nRegisters:");
+        printf("\nAccumulator: %x, X: %x, Y: %x", cpu.accumulator, cpu.x, cpu.y);
+        printf("\nProgram Counter: %x, Status: %x\n", cpu.program_counter, cpu.status);
+        
+        #endif
     }
 
     cycles--;
@@ -94,7 +114,38 @@ void clock(){
 }
 
 
+#ifdef LOGMODE //main for testing
+
+#define PROGRAM 19
+#define INSTRUCTION_COUNT 8
+
 int main()
 {
+    uint8_t program[PROGRAM] = {0x69, 0x1, 0x65, 0x2, 0x75, 0xFF, 
+                                0x6D, 0x03, 0x02, 0x7D, 0xFF, 0x01, 
+                                0x79, 0x00, 0x02, 0x61, 0xFF, 0x71, 0x02};
+
+    cpu_reset();
+
+    cpu.x = 0x03;
+    cpu.y = 0x02;
+    cpu_write(0x0002, 0x01);
+    cpu_write(0x0003, 0x0F);
+    cpu_write(0x0F01, 0x03);
+    cpu_write(0x0F03, 0x02);
+    cpu_write(0x0203, 0xFC);
+    cpu_write(0x0202, 0x01);
+
+    uint16_t i;
+    for (i=0; i < PROGRAM; i++)
+        cpu_write(i+cpu.program_counter, program[i]);
+
+    for (i=0; i < INSTRUCTION_COUNT; i++){
+        while (cycles)
+            clock();
+        clock();
+    }
+
     return 0;
 }
+#endif

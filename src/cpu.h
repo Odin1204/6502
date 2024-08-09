@@ -1,5 +1,6 @@
 #ifndef CPU_H
 #define CPU_H
+#define CPU_INTERNAL_ACCESS
 
 #include <stdio.h>
 #include <stdlib.h>
