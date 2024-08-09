@@ -28,7 +28,7 @@ $(SRC_DIR)/%.o: $(SRC_DIR)/%.c $(HDRS)
 
 #clean
 clean:
-	rm -f $(OBJS)
+	rm -f $(OBJS) $(TARGET)
 
 #phony targets
 .PHONY: clean
