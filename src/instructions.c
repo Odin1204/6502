@@ -374,6 +374,8 @@ uint8_t IZY(void){
 
 //Operations
 
+/*ADC: The addition alone is pretty trivial. The complex part is the correct manipulation of the flags.
+  Espacially the Overflow register.*/
 uint8_t ADC(void){
     fetch();
 
@@ -398,18 +400,55 @@ uint8_t ADC(void){
     return 1;
 }
 
+
+static uint8_t SBC(void){
+    return 0;
+}
+
+//Placeholder for illegal opcodes
 static uint8_t XXX(void){
     return 0;
 }
+
+//LDA: loads fetched value into accumulator and sets affected flags.
 static uint8_t LDA(void){
-    return 0;
+    fetch();
+
+    cpu.accumulator = state.fetched;
+
+    set_flag(Z, !cpu.accumulator);
+
+    set_flag(N, ((cpu.accumulator & 0x80) >> 7));
+    
+    return 1;
 }
+
+//LDX: like LDA, with the x register
 static uint8_t LDX(void){
-    return 0;
+    fetch();
+
+    cpu.x = state.fetched;
+
+    set_flag(Z, !cpu.x);
+
+    set_flag(N, ((cpu.x & 0x80) >> 7));
+    
+    return 1;
 }
+
+//LDY: like LDA and LDX, but with the y register
 static uint8_t LDY(void){
-    return 0;
+    fetch();
+
+    cpu.y = state.fetched;
+
+    set_flag(Z, !cpu.y);
+
+    set_flag(N, ((cpu.y & 0x80) >> 7));
+    
+    return 1;
 }
+
 static uint8_t BRK(void){
     return 0;
 }
@@ -477,9 +516,6 @@ static uint8_t STY(void){
     return 0;
 }
 static uint8_t CMP(void){
-    return 0;
-}
-static uint8_t SBC(void){
     return 0;
 }
 static uint8_t ASL(void){
