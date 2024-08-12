@@ -39,6 +39,7 @@ struct Cpu
 #define N 7
 
 extern struct Cpu cpu;
+extern uint8_t cycles;
 
 uint8_t set_status_flag(uint8_t flag, uint8_t val);
 uint8_t extract_flag(uint8_t flag);

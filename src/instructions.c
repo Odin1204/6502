@@ -268,10 +268,10 @@ uint8_t ZPY(void){
 
 /*Relative: Only for Branch instructions. 
   It can only jump within the range of -127 to 128 relative to the program counter.
-  If the 7th bit is 0, so the number is signed, the high byte is set to 0xFF so arithmatic will work.*/
+  If the 7th bit is 1, so the number is signed, the high byte is set to 0xFF so arithmatic will work.*/
 uint8_t REL(void){
     state.addr_rel = (cpu_read(cpu.program_counter));
-    if (state.addr_rel | 0x80)
+    if (state.addr_rel & 0x80)
         state.addr_rel |= 0xFF00;
 
     return 0;
@@ -401,12 +401,81 @@ uint8_t ADC(void){
 }
 
 
+/*SBC: Subtraction is actually pretty similiar to addition. Since Subtraction is A = A - F - (1-C),
+  it can be rewritten as A = A + -F - 1 + C. Since -F is the 2s compliment and we subtract 1 afterwords
+  we can simply just flip the bits of the fetched data. The rest is the same as addition*/
 static uint8_t SBC(void){
-    return 0;
+    fetch();
+
+    uint16_t temp = cpu.accumulator + (state.fetched ^ 0xFF) + (!get_flag(C));
+
+    set_flag(C,temp > 0xFF);
+
+    set_flag(Z, (!(temp & 0xFF)));
+
+    set_flag(N, (temp & 0x80) > 0);
+
+    set_flag(O, ((~(state.fetched ^ cpu.accumulator) & (cpu.accumulator ^ temp)) >> 7) & 1);
+
+    cpu.accumulator = temp & 0x00FF;
+    
+    return 1;
 }
 
 //Placeholder for illegal opcodes
 static uint8_t XXX(void){
+    return 0;
+}
+
+//AND: performs bitwise and with Accumulator and fetched Data and sets the affected flags.
+static uint8_t AND(void){
+    fetch();
+
+    cpu.accumulator = cpu.accumulator & state.fetched;
+
+    set_flag(Z, (!cpu.accumulator));
+
+    set_flag(N, (cpu.accumulator & 0x80) > 0);
+
+    return 1;
+}
+
+/*ASL: Arithmetic shift left by one bit and sets the affected flags*/
+static uint8_t ASL(void){
+    fetch();
+
+    uint16_t temp = (uint16_t)state.fetched << 1;   
+
+    set_flag(C, temp > 0xFF);
+
+    set_flag(Z, (!temp));
+
+    set_flag(N, (temp & 0x80) > 0);
+
+    if (lookup[state.opcode].mode == &IMP)
+        cpu.accumulator = (temp & 0xFF);
+    else
+        cpu_write(state.addr_abs, (temp & 0xFF)); 
+    
+    return 0;
+}
+
+
+/*BCC: Branches if carry bit is clear. If it branches it takes an 
+       additional cycle and if it crosses a page while branching it takes another cycle*/
+static uint8_t BCC(void){
+
+    if (!get_flag(C)){
+        cycles++;
+
+        state.addr_abs = cpu.program_counter + state.addr_rel;
+
+        if ((state.addr_abs & 0xFF00) != (cpu.program_counter & 0xFF00))
+            cycles++;
+
+        cpu.program_counter = state.addr_abs;
+    }
+
     return 0;
 }
 
@@ -476,9 +545,7 @@ static uint8_t BVS(void){
 static uint8_t NOP(void){
     return 0;
 }
-static uint8_t BCC(void){
-    return 0;
-}
+
 static uint8_t BCS(void){
     return 0;
 }
@@ -497,9 +564,7 @@ static uint8_t BEQ(void){
 static uint8_t ORA(void){
     return 0;
 }
-static uint8_t AND(void){
-    return 0;
-}
+
 static uint8_t EOR(void){
     return 0;
 }
@@ -518,9 +583,7 @@ static uint8_t STY(void){
 static uint8_t CMP(void){
     return 0;
 }
-static uint8_t ASL(void){
-    return 0;
-}
+
 static uint8_t ROL(void){
     return 0;
 }
