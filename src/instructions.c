@@ -206,6 +206,18 @@ static uint8_t fetch(void){
     return state.fetched;
 }
 
+//Stack Instructions
+
+//pushes data to stack
+void push(uint8_t data){
+    cpu_write(0x100+cpu.stack_pointer--, data);
+}
+
+//pulls value from stack and returns it
+uint8_t pull(){
+    return cpu_read(0x100+(++cpu.stack_pointer));
+}
+
 /*stores the opcode in the state.opcode variable, sets the cycles variable of the cpu.c file to the 
   corresponding cycles, executes the addressing mode and operation. If needed it also adds an additional cycle*/ 
 void execute_instruction(uint8_t op, uint8_t *cycles){
@@ -224,6 +236,27 @@ void execute_instruction(uint8_t op, uint8_t *cycles){
     #endif
 
     *cycles += additional_cycle1 & additional_cycle2;
+}
+
+/*IRQ: Interrupt request. Pushes Program counter and status Register to the stack 
+  and reads new program counter location from fixed position in memory*/
+void IRQ(){
+    if (!get_flag(I)){
+        push((cpu.program_counter >> 8) & 0xFF);
+        push(cpu.program_counter & 0xFF);
+
+        set_flag(B, 0);
+        set_flag(I, 1);
+        push(cpu.status);
+
+        state.addr_abs = 0xFFFE;
+        uint16_t low = cpu_read(state.addr_abs++);
+        uint16_t high = cpu_read(state.addr_abs) << 8;
+
+        cpu.program_counter = high | low;
+
+        cycles = 7;
+    }
 }
 
 
@@ -479,6 +512,325 @@ static uint8_t BCC(void){
     return 0;
 }
 
+//BCS: Branches if carry bit is set. similliar to BCC
+static uint8_t BCS(void){
+    
+    if (get_flag(C)){
+        
+        cycles++;
+
+        state.addr_abs = cpu.program_counter + state.addr_rel;
+
+        if ((state.addr_abs & 0xFF00) != (cpu.program_counter & 0xFF00))
+            cycles++;
+
+        cpu.program_counter = state.addr_abs;
+    }
+
+    return 0;
+}
+
+//BEQ: Branches if zero bit is set.
+static uint8_t BEQ(void){
+
+    if (get_flag(Z)){
+        
+        cycles++;
+
+        state.addr_abs = cpu.program_counter + state.addr_rel;
+
+        if ((state.addr_abs & 0xFF00) != (cpu.program_counter & 0xFF00))
+            cycles++;
+
+        cpu.program_counter = state.addr_abs;
+    }
+
+    return 0;
+}
+/*BIT: USES bitwise AND on the accumulator and fetched memory, sets the zero flag if zero,
+  overflow to bit 6 and negaitve to bit 7 of result. Doesn't store the result.*/
+static uint8_t BIT(void){
+    fetch();
+
+    uint8_t temp = state.fetched & cpu.accumulator;
+
+    set_flag(Z, (!temp));
+
+    set_flag(O, (temp & 0x40) > 0);
+
+    set_flag(N, (temp & 0x80) > 0);
+
+    return 0;
+}
+
+//BMI: Branches if negative flag is set
+static uint8_t BMI(void){
+
+    if (get_flag(N)){
+        
+        cycles++;
+
+        state.addr_abs = cpu.program_counter + state.addr_rel;
+
+        if ((state.addr_abs & 0xFF00) != (cpu.program_counter & 0xFF00))
+            cycles++;
+
+        cpu.program_counter = state.addr_abs;
+    }
+
+    return 0;
+}
+
+//BNE: Branches if zero flag is not set
+static uint8_t BNE(void){
+
+    if (!get_flag(Z)){
+        
+        cycles++;
+
+        state.addr_abs = cpu.program_counter + state.addr_rel;
+
+        if ((state.addr_abs & 0xFF00) != (cpu.program_counter & 0xFF00))
+            cycles++;
+
+        cpu.program_counter = state.addr_abs;
+    }
+
+    return 0;
+}
+
+//BPL: Branch if negative flag is not set
+static uint8_t BPL(void){
+    
+    if (!get_flag(N)){
+        
+        cycles++;
+
+        state.addr_abs = cpu.program_counter + state.addr_rel;
+
+        if ((state.addr_abs & 0xFF00) != (cpu.program_counter & 0xFF00))
+            cycles++;
+
+        cpu.program_counter = state.addr_abs;
+    }
+
+    return 0;
+}
+
+//BRK: forces generation of an interupt request similiar to IRQ
+static uint8_t BRK(void){
+
+    push((cpu.program_counter >> 8) & 0xFF);
+    push(cpu.program_counter & 0xFF);
+
+    set_flag(B, 1);
+    push(cpu.status);
+
+    state.addr_abs = 0xFFFE;
+    uint16_t low = cpu_read(state.addr_abs++);
+    uint16_t high = cpu_read(state.addr_abs) << 8;
+
+    cpu.program_counter = high | low;
+
+    return 0;
+}
+
+//BVC: Branch if overflow clear
+static uint8_t BVC(void){
+
+    if (!get_flag(O)){
+        
+        cycles++;
+
+        state.addr_abs = cpu.program_counter + state.addr_rel;
+
+        if ((state.addr_abs & 0xFF00) != (cpu.program_counter & 0xFF00))
+            cycles++;
+
+        cpu.program_counter = state.addr_abs;
+    }
+
+    return 0;
+}
+
+//BVS: branch if overflow set
+static uint8_t BVS(void){
+
+    if (get_flag(O)){
+        
+        cycles++;
+
+        state.addr_abs = cpu.program_counter + state.addr_rel;
+
+        if ((state.addr_abs & 0xFF00) != (cpu.program_counter & 0xFF00))
+            cycles++;
+
+        cpu.program_counter = state.addr_abs;
+    }
+
+    return 0;
+}
+
+//CLC: Clear carry flag
+static uint8_t CLC(void){
+    set_flag(C, 0);
+
+    return 0;
+}
+
+//CLD: Clear decimal flag
+static uint8_t CLD(void){
+    set_flag(D, 0);
+
+    return 0;
+}
+
+//CLI: Clear interupt disable
+static uint8_t CLI(void){
+    set_flag(I, 0);
+    
+    return 0;
+}
+
+//CLV: Clear overflow
+static uint8_t CLV(void){
+    set_flag(O, 0);
+
+    return 0;
+}
+
+//CMP: Compares fetched byte with accumulator and sets flags depending on the result
+static uint8_t CMP(void){
+    fetch();
+    
+    uint8_t temp = cpu.accumulator - state.fetched;
+
+    set_flag(C,temp >= 0);
+    set_flag(Z, !temp);
+    set_flag(N, (temp & 0x80) > 0);
+
+    return 1;
+}
+
+//CPX: Like CMP but with the X register
+static uint8_t CPX(void){
+    fetch();
+    
+    uint8_t temp = cpu.x - state.fetched;
+
+    set_flag(C,temp >= 0);
+    set_flag(Z, !temp);
+    set_flag(N, (temp & 0x80) > 0);
+
+    return 1;
+}
+
+//CPY: Like CMP but with Y register
+static uint8_t CPY(void){
+    fetch();
+    
+    uint8_t temp = cpu.y - state.fetched;
+
+    set_flag(C,temp >= 0);
+    set_flag(Z, !temp);
+    set_flag(N, (temp & 0x80) > 0);
+
+    return 1;
+}
+
+//DEC: Decrements value in value held at a specified memory location setting the zero and negative flags
+static uint8_t DEC(void){
+    fetch();
+
+    cpu_write(state.addr_abs, --state.fetched);
+    
+    set_flag(Z, !state.fetched);
+    set_flag(N, (state.fetched & 0x80) > 0);
+
+    return 0;
+}
+
+//DEX: Same as DEC but with X register
+static uint8_t DEX(void){
+    cpu.x--;
+
+    set_flag(Z, !cpu.x);
+    set_flag(N, (cpu.x & 0x80) > 0);
+
+    return 0;
+}
+
+//DEY: Same as DEC but Y
+static uint8_t DEY(void){
+    cpu.y--;
+
+    set_flag(Z, !cpu.y);
+    set_flag(N, (cpu.y & 0x80) > 0);
+
+    return 0;
+}
+
+//EOR: Bitwise exclusive or on fetched data and accumulator. Sets affected flags.
+static uint8_t EOR(void){
+    fetch();
+
+    cpu.accumulator = cpu.accumulator ^ state.fetched;
+
+    set_flag(Z, !cpu.accumulator);
+    set_flag(N, (cpu.accumulator & 0x80) > 0);
+    
+    return 1;
+}
+
+//INC: Increments value in value held at a specified memory location setting the zero and negative flags
+static uint8_t INC(void){
+    fetch();
+
+    cpu_write(state.addr_abs, ++state.fetched);
+    
+    set_flag(Z, !state.fetched);
+    set_flag(N, (state.fetched & 0x80) > 0);
+
+    return 0;
+}
+
+//INX: Same as INC but with X register
+static uint8_t INX(void){
+    cpu.x++;
+
+    set_flag(Z, !cpu.x);
+    set_flag(N, (cpu.x & 0x80) > 0);
+
+    return 0;
+}
+static uint8_t INY(void){
+    cpu.y++;
+
+    set_flag(Z, !cpu.y);
+    set_flag(N, (cpu.y & 0x80) > 0);
+
+    return 0;
+}
+
+//JMP: Sets program counter to address absolute
+static uint8_t JMP(void){
+    cpu.program_counter = state.addr_abs;
+
+    return 0;
+}
+
+//JSR: Decrements Program Counter then pushes it to stack. Then jumps to specified address
+static uint8_t JSR(void){
+    cpu.program_counter--;
+
+    push((cpu.program_counter >> 8) & 0xFF);
+    push(cpu.program_counter & 0xFF);
+
+    cpu.program_counter = state.addr_abs;
+
+    return 0;
+}
+
 //LDA: loads fetched value into accumulator and sets affected flags.
 static uint8_t LDA(void){
     fetch();
@@ -487,7 +839,7 @@ static uint8_t LDA(void){
 
     set_flag(Z, !cpu.accumulator);
 
-    set_flag(N, ((cpu.accumulator & 0x80) >> 7));
+    set_flag(N, ((cpu.accumulator & 0x80) > 0));
     
     return 1;
 }
@@ -500,7 +852,7 @@ static uint8_t LDX(void){
 
     set_flag(Z, !cpu.x);
 
-    set_flag(N, ((cpu.x & 0x80) >> 7));
+    set_flag(N, ((cpu.x & 0x80) > 0));
     
     return 1;
 }
@@ -513,155 +865,245 @@ static uint8_t LDY(void){
 
     set_flag(Z, !cpu.y);
 
-    set_flag(N, ((cpu.y & 0x80) >> 7));
+    set_flag(N, ((cpu.y & 0x80) > 0));
     
     return 1;
 }
 
-static uint8_t BRK(void){
-    return 0;
-}
-static uint8_t BPL(void){
-    return 0;
-}
-static uint8_t JSR(void){
-    return 0;
-}
-static uint8_t BMI(void){
-    return 0;
-}
-static uint8_t RTI(void){
-    return 0;
-}
-static uint8_t BVC(void){
-    return 0;
-}
-static uint8_t RTS(void){
-    return 0;
-}
-static uint8_t BVS(void){
-    return 0;
-}
-static uint8_t NOP(void){
-    return 0;
-}
-
-static uint8_t BCS(void){
-    return 0;
-}
-static uint8_t BNE(void){
-    return 0;
-}
-static uint8_t CPX(void){
-    return 0;
-}
-static uint8_t CPY(void){
-    return 0;
-}
-static uint8_t BEQ(void){
-    return 0;
-}
-static uint8_t ORA(void){
-    return 0;
-}
-
-static uint8_t EOR(void){
-    return 0;
-}
-static uint8_t BIT(void){
-    return 0;
-}
-static uint8_t STA(void){
-    return 0;
-}
-static uint8_t STX(void){
-    return 0;
-}
-static uint8_t STY(void){
-    return 0;
-}
-static uint8_t CMP(void){
-    return 0;
-}
-
-static uint8_t ROL(void){
-    return 0;
-}
+//LSR: Logical shift right either value in memory or accumulator
 static uint8_t LSR(void){
+    fetch();
+
+    set_flag(C, state.fetched & 0x1);
+    
+    uint16_t temp = state.fetched >> 1;
+    
+    set_flag(Z, !temp);
+    set_flag(N, (temp & 0x80) > 0);
+
+    if (lookup[state.opcode].mode == &IMP)
+        cpu.accumulator = temp & 0xFF;
+    else
+        cpu_write(state.addr_abs, temp & 0xFF);
+
     return 0;
 }
-static uint8_t ROR(void){
+
+//NOP: No operation depending on opcode returns either 0 or 1
+static uint8_t NOP(void){
+
+    switch (state.opcode) {
+	case 0x1C:
+	case 0x3C:
+	case 0x5C:
+	case 0x7C:
+	case 0xDC:
+	case 0xFC:
+		return 1;
+		break;
+	}
+
     return 0;
 }
-static uint8_t DEC(void){
-    return 0;
+
+//ORA: Bitwise or on fetched data and accumulator
+static uint8_t ORA(void){
+    fetch();
+
+    cpu.accumulator = cpu.accumulator | state.fetched;
+    
+    set_flag(Z, !cpu.accumulator);
+    set_flag(N, (cpu.accumulator & 0x80) > 0);
+    
+    return 1;
 }
-static uint8_t DEX(void){
-    return 0;
-}
-static uint8_t DEY(void){
-    return 0;
-}
-static uint8_t INC(void){
-    return 0;
-}
-static uint8_t INX(void){
-    return 0;
-}
-static uint8_t INY(void){
-    return 0;
-}
-static uint8_t PHP(void){
-    return 0;
-}
-static uint8_t SEC(void){
-    return 0;
-}
-static uint8_t CLC(void){
-    return 0;
-}
-static uint8_t CLI(void){
-    return 0;
-}
-static uint8_t PLP(void){
-    return 0;
-}
-static uint8_t PLA(void){
-    return 0;
-}
+
+//PHA: Pushes copy of accumulator to stack
 static uint8_t PHA(void){
+    push(cpu.accumulator);
+
     return 0;
 }
-static uint8_t SEI(void){
+
+//PHP: Pushes copy of status register to stack
+static uint8_t PHP(void){
+    push(cpu.status);
+
     return 0;
 }
-static uint8_t TYA(void){
+
+//PLA: Pulls 8 bit value from stack and stores it in accumulator
+static uint8_t PLA(void){
+    cpu.accumulator = pull();
+
+    set_flag(Z, !cpu.accumulator);
+    set_flag(N, (cpu.accumulator & 0x80) > 0);
+
     return 0;
 }
-static uint8_t CLV(void){
+
+//PLP: Pulls 8 bit value from stack and stores it in status register
+static uint8_t PLP(void){
+    cpu.status = pull();
+
     return 0;
 }
-static uint8_t CLD(void){
+
+/*ROL: Move each bit of either value in memory or the accumulator to the left.
+  bit 0 is set to the carry flag and the previous bit 7 becomes new carry flag*/
+static uint8_t ROL(void){
+    fetch();
+
+    
+    uint16_t temp = (uint16_t)state.fetched << 1 | get_flag(C);
+    
+    set_flag(C, (temp & 0x100) > 0);
+    set_flag(Z, !(temp & 0xFF));
+    set_flag(N, (temp & 0x80) > 0);
+
+    if (lookup[state.opcode].mode == &IMP)
+        cpu.accumulator = temp & 0xFF;
+    else
+        cpu_write(state.addr_abs, temp & 0xFF);
+
     return 0;
 }
+
+//ROR: Like ROL but one bit right
+static uint8_t ROR(void){
+    fetch();
+
+    uint16_t temp = (uint16_t)state.fetched >> 1 | get_flag(C);
+    
+    set_flag(C, (temp & 0x100) > 0);
+    set_flag(Z, !(temp & 0xFF));
+    set_flag(N, (temp & 0x80) > 0);
+
+    if (lookup[state.opcode].mode == &IMP)
+        cpu.accumulator = temp & 0xFF;
+    else
+        cpu_write(state.addr_abs, temp & 0xFF);
+
+    return 0;
+}
+
+//RTI: Pulls the status register from stack then the program counter
+static uint8_t RTI(void){
+    cpu.status = pull();
+
+    uint16_t low = (uint16_t)pull();
+    uint16_t high = (uint16_t)pull() << 8;
+
+    cpu.program_counter = high | low;
+
+    return 0;
+}
+
+//RTS: Gets program counter (that was decremented before pushed) from stack
+static uint8_t RTS(void){
+    uint16_t low = (uint16_t)pull();
+    uint16_t high = (uint16_t)pull() << 8;
+
+    cpu.program_counter = high | low;
+
+    return 0;
+}
+
+//SEC: Set carry flag
+static uint8_t SEC(void){
+    set_flag(C, 1);
+    
+    return 0;
+}
+
+//SED: Set decimal flag
 static uint8_t SED(void){
+    set_flag(D, 1);
+    
     return 0;
 }
-static uint8_t TXA(void){
+
+//SEI: Set interupt disable flag
+static uint8_t SEI(void){
+    set_flag(I, 1);
+
     return 0;
 }
-static uint8_t TXS(void){
+
+//STA: Stores accumulator in memory
+static uint8_t STA(void){
+    cpu_write(state.addr_abs, cpu.accumulator);
+
     return 0;
 }
+
+//STX: Stores X register in memory
+static uint8_t STX(void){
+    cpu_write(state.addr_abs, cpu.x);
+    
+    return 0;
+}
+
+//STY: Stores Y register in memory
+static uint8_t STY(void){
+    cpu_write(state.addr_abs, cpu.y);
+
+    return 0;
+}
+
+//TAX: Transfers Accumulator to X and sets affected flags
 static uint8_t TAX(void){
+    cpu.x = cpu.accumulator;
+
+    set_flag(Z, !cpu.x);
+    set_flag(N, (cpu.x & 0x80) > 0);
+
     return 0;
 }
+
+//TAY: Like TAX but with Y register
 static uint8_t TAY(void){
+    cpu.y = cpu.accumulator;
+
+    set_flag(Z, !cpu.y);
+    set_flag(N, (cpu.y & 0x80) > 0);
+    
     return 0;
 }
+
+//TSX: Transfers Stack pointer to X and set affected flags
 static uint8_t TSX(void){
+    cpu.x = cpu.stack_pointer;
+
+    set_flag(Z, !cpu.x);
+    set_flag(N, (cpu.x & 0x80) > 0);
+
     return 0;
 }
-static uint8_t JMP(void){
+
+//TXA: Transfers X register to accumulator and sets affected flags
+static uint8_t TXA(void){
+    cpu.accumulator = cpu.x;
+
+    set_flag(Z, !cpu.accumulator);
+    set_flag(N, (cpu.x & 0x80) > 0);
+
+    return 0;
+}
+
+//TXS: Transfers X register to stack pointer
+static uint8_t TXS(void){
+    cpu.stack_pointer = cpu.x;
+    
+    return 0;
+}
+
+//TYA: Transfers Y to accumulator and sets affected flags
+static uint8_t TYA(void){
+    cpu.accumulator = cpu.y;
+
+    set_flag(Z, !cpu.accumulator);
+    set_flag(N, (cpu.accumulator & 0x80) > 0);
+    
     return 0;
 }

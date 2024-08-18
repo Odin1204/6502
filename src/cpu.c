@@ -59,7 +59,7 @@ void cpu_reset(){
     cpu.x = 0x0;
     cpu.y = 0x0;
     cpu.status = 0x0;
-    cpu.stack_pointer = 0xFD;
+    cpu.stack_pointer = 0xFF;
 
     reset_emulator_state();
     init_bus(&bus, &cpu, &mem);

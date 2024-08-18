@@ -8,6 +8,8 @@
 
 
 #ifdef CPU_INTERNAL_ACCESS
+
+//structure that contains the registers of the cpu
 struct Cpu
 {
     /* Registers */
