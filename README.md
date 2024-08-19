@@ -43,7 +43,7 @@ In the instruction file it only tells you the Stack operations, the Name of inst
 - [ ] **main.c:** The way **main.c** handles the execution of programs is not ideal since it will ask if you want   
                   to continue after every Instruction.
 
-##Acknowledgements
+## Acknowledgements
 
 This project was made possible with the help of the following Resources:
 
