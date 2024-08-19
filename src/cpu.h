@@ -48,8 +48,11 @@ uint8_t extract_flag(uint8_t flag);
 
 uint8_t cpu_read(uint16_t address);
 void cpu_write(uint16_t address, uint8_t data);
+void cpu_reset();
+void clock();
 
 uint8_t extract_flag(uint8_t flag);
+
 
 #endif //for files that need access to the internal cpu structure
 

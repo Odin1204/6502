@@ -90,7 +90,7 @@ void clock(){
 
     if (cycles == 0){
         #ifdef LOGMODE
-        printf("\nNew Instruction");
+        printf("\nNEW INSTRUCTION:\n\n");
         #endif
 
         opcode = cpu_read(cpu.program_counter++);
@@ -105,7 +105,8 @@ void clock(){
         printf("\nRegisters:");
         printf("\nAccumulator: %x, X: %x, Y: %x", cpu.accumulator, cpu.x, cpu.y);
         printf("\nProgram Counter: %x, Status: %x\n", cpu.program_counter, cpu.status);
-        
+        printf("\nEND OF INSTRUCTION\n\n");
+
         #endif
     }
 
@@ -113,39 +114,3 @@ void clock(){
     clock_count++;
 }
 
-
-#ifdef LOGMODE //main for testing
-
-#define PROGRAM 19
-#define INSTRUCTION_COUNT 8
-
-int main()
-{
-    uint8_t program[PROGRAM] = {0x69, 0x1, 0x65, 0x2, 0x75, 0xFF, 
-                                0x6D, 0x03, 0x02, 0x7D, 0xFF, 0x01, 
-                                0x79, 0x00, 0x02, 0x61, 0xFF, 0x71, 0x02};
-
-    cpu_reset();
-
-    cpu.x = 0x03;
-    cpu.y = 0x02;
-    cpu_write(0x0002, 0x01);
-    cpu_write(0x0003, 0x0F);
-    cpu_write(0x0F01, 0x03);
-    cpu_write(0x0F03, 0x02);
-    cpu_write(0x0203, 0xFC);
-    cpu_write(0x0202, 0x01);
-
-    uint16_t i;
-    for (i=0; i < PROGRAM; i++)
-        cpu_write(i+cpu.program_counter, program[i]);
-
-    for (i=0; i < INSTRUCTION_COUNT; i++){
-        while (cycles)
-            clock();
-        clock();
-    }
-
-    return 0;
-}
-#endif

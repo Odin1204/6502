@@ -210,12 +210,22 @@ static uint8_t fetch(void){
 
 //pushes data to stack
 void push(uint8_t data){
+    #ifdef LOGMODE
+    printf("\nPUSHED DATA: %x\n", data);
+    #endif
+
     cpu_write(0x100+cpu.stack_pointer--, data);
 }
 
 //pulls value from stack and returns it
 uint8_t pull(){
-    return cpu_read(0x100+(++cpu.stack_pointer));
+    uint8_t data = cpu_read(0x100+(++cpu.stack_pointer));
+
+    #ifdef LOGMODE
+    printf("\nPULLED DATA: %x\n", data);
+    #endif
+
+    return data;
 }
 
 /*stores the opcode in the state.opcode variable, sets the cycles variable of the cpu.c file to the 
@@ -423,10 +433,6 @@ uint8_t ADC(void){
     set_flag(N, (temp & 0x80) > 0);
 
     set_flag(O, ((~(state.fetched ^ cpu.accumulator) & (cpu.accumulator ^ temp)) >> 7) & 1);
-
-    #ifdef LOGMODE
-    printf("\ntemp while ADC: %x\n", temp); 
-    #endif
 
     cpu.accumulator = temp & 0x00FF;
 
@@ -705,7 +711,7 @@ static uint8_t CMP(void){
     
     uint8_t temp = cpu.accumulator - state.fetched;
 
-    set_flag(C,temp >= 0);
+    set_flag(C,cpu.accumulator >= state.fetched);
     set_flag(Z, !temp);
     set_flag(N, (temp & 0x80) > 0);
 
@@ -718,7 +724,7 @@ static uint8_t CPX(void){
     
     uint8_t temp = cpu.x - state.fetched;
 
-    set_flag(C,temp >= 0);
+    set_flag(C,cpu.x >= state.fetched);
     set_flag(Z, !temp);
     set_flag(N, (temp & 0x80) > 0);
 
@@ -731,7 +737,7 @@ static uint8_t CPY(void){
     
     uint8_t temp = cpu.y - state.fetched;
 
-    set_flag(C,temp >= 0);
+    set_flag(C,cpu.y >= state.fetched);
     set_flag(Z, !temp);
     set_flag(N, (temp & 0x80) > 0);
 
@@ -825,6 +831,8 @@ static uint8_t JSR(void){
 
     push((cpu.program_counter >> 8) & 0xFF);
     push(cpu.program_counter & 0xFF);
+
+    printf("pc %x", cpu.program_counter);
 
     cpu.program_counter = state.addr_abs;
 
@@ -994,6 +1002,7 @@ static uint8_t RTI(void){
     uint16_t low = (uint16_t)pull();
     uint16_t high = (uint16_t)pull() << 8;
 
+    
     cpu.program_counter = high | low;
 
     return 0;
@@ -1005,6 +1014,8 @@ static uint8_t RTS(void){
     uint16_t high = (uint16_t)pull() << 8;
 
     cpu.program_counter = high | low;
+
+    cpu.program_counter++;
 
     return 0;
 }

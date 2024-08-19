@@ -4,13 +4,13 @@ CC=gcc
 CFLAGS = -Wall -Wextra -std=c11 -g
 
 #output executable
-TARGET = emulator_test1
+TARGET = 6502_EMULATOR 
 
 #source directory
 SRC_DIR = ./src
 
 #source files
-SRCS = ${SRC_DIR}/cpu.c ${SRC_DIR}/bus.c  ${SRC_DIR}/memory.c  ${SRC_DIR}/instructions.c
+SRCS = main.c ${SRC_DIR}/cpu.c ${SRC_DIR}/bus.c  ${SRC_DIR}/memory.c  ${SRC_DIR}/instructions.c
 
 #defining object files
 OBJS = ${SRCS:.c=.o}
@@ -28,7 +28,7 @@ $(SRC_DIR)/%.o: $(SRC_DIR)/%.c $(HDRS)
 
 #clean
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(OBJS) $(TARGET) memdump.txt
 
 #phony targets
 .PHONY: clean

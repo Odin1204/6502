@@ -44,21 +44,3 @@ void write_to_memory(struct Memory *mem, uint16_t address, uint8_t data){
     return;
 }
 
-/*test
-int main(){
-    struct Memory mem;
-    reset_memory(&mem);
-
-    uint16_t arr[4] = {0xFFFA, 0x00FF, 0x100, 0x1401, 0x120};
-    int i;
-
-    write_to_memory(&mem, 0xFFFA, 0x10);
-    write_to_memory(&mem, 0x00FF, 0x01);
-    write_to_memory(&mem, 0x100, 0x40);
-    write_to_memory(&mem, 0x1401, 0x12);
-
-    for (i=0; i < 5; i++)
-        printf("\n%x\n", read_from_memory(&mem, arr[i]));
-
-    return 0;
-}*/
