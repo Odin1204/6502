@@ -446,7 +446,7 @@ uint8_t ADC(void){
 static uint8_t SBC(void){
     fetch();
 
-    uint16_t temp = cpu.accumulator + (state.fetched ^ 0xFF) + (!get_flag(C));
+    uint16_t temp = cpu.accumulator + (state.fetched ^ 0xFF) + (get_flag(C));
 
     set_flag(C,temp > 0xFF);
 
