@@ -17,6 +17,10 @@ Then simply run
 
 ` ./6502_EMULATOR any_program.bin `
 
+The program will ask you after every Instruction if you want to continue.
+You can answer with `y` and it will ask you after the next instruction again if you want to continue.
+`n` will quit the program and `f` will fast forward till the brake flag is set.
+
 To clean it up afterwards just run
 
 ` make clean `

@@ -85,7 +85,7 @@ static uint8_t JMP(void);
 
 /*lookup table of opcodes*/
 struct instruction lookup[256] = {
-    {"BRK", &BRK, &IMM, 7}, {"ORA", &ORA, &IZX, 6}, {"???", &XXX, &IMP, 2},
+    {"BRK", &BRK, &IMM, 7}, {"ORA", &ORA, &IZX, 6}, {"EXIT", &XXX, &IMP, 2},
     {"???", &XXX, &IMP, 8}, {"???", &NOP, &IMP, 3}, {"ORA", &ORA, &ZP0, 3},
     {"ASL", &ASL, &ZP0, 5}, {"???", &XXX, &IMP, 5}, {"PHP", &PHP, &IMP, 3},
     {"ORA", &ORA, &IMM, 2}, {"ASL", &ASL, &IMP, 2}, {"???", &XXX, &IMP, 2},
@@ -313,7 +313,7 @@ uint8_t ZPY(void){
   It can only jump within the range of -127 to 128 relative to the program counter.
   If the 7th bit is 1, so the number is signed, the high byte is set to 0xFF so arithmatic will work.*/
 uint8_t REL(void){
-    state.addr_rel = (cpu_read(cpu.program_counter));
+    state.addr_rel = (cpu_read(cpu.program_counter++));
     if (state.addr_rel & 0x80)
         state.addr_rel |= 0xFF00;
 

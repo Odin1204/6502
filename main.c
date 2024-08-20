@@ -58,13 +58,13 @@ void memdump(){
 
     uint16_t i;
     for (i = 0; i < MEM; i++){
-        if (i=0)
+        if (i==0)
             fprintf(file, "Zero Page:\n");
         
-        if (i=0x100)
+        if (i==0x100)
             fprintf(file, "\nStack: \n");
 
-        if (i=0x200)
+        if (i==0x200)
             fprintf(file, "\nData: \n");
         
         if (!(i % 16))
@@ -74,10 +74,17 @@ void memdump(){
     }
 }
 
+void forward_to_break(){
+    while(!extract_flag(B))
+        clock();
+
+    return;
+}
+
 void can_continue(){
     char c;
 
-    printf("Continue? y/n\n");
+    printf("Continue or fast forward? y/n/f \n");
     c = getchar();
     getchar();
 
@@ -91,9 +98,11 @@ void can_continue(){
         
         exit(0);
     }
+    else if (c == 'f')
+        forward_to_break();
     else {
         printf("ERROR: unknown input -- continue %c\n", c);
-        exit(1);
+        can_continue();
     }
 }
 
