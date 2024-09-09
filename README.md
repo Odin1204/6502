@@ -45,7 +45,7 @@ In the instruction file it only tells you the Stack operations, the Name of inst
 
 ### TODO
 - [ ] **main.c:** The way **main.c** handles the execution of programs is not ideal since it will ask if you want   
-                  to continue after every Instruction.
+                  to continue after every Instruction or lets you fast forward to till a break instruction.
 
 ## Acknowledgements
 
